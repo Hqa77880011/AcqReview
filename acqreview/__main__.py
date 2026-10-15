@@ -98,6 +98,8 @@ def prepare(args, cfg):
     episodes = pd.read_csv(args.episodes, dtype={"patient": str, "episode": str})
     obs = pd.read_csv(args.observations, dtype={"episode": str})
     check_groups(episodes.patient.to_numpy(), episodes.split.to_numpy())
+    if ((episodes.fatal == 1) & (episodes.terminal_known != 1)).any():
+        raise ValueError("Fatal endpoints require verified terminal status")
     if not set(obs.variable).issubset(VARIABLES):
         raise ValueError("Unknown variable in observation dictionary")
     training = set(episodes.loc[episodes.split == "train", "episode"])
@@ -143,7 +145,7 @@ def prepare(args, cfg):
                 keep = native & (rng.random(native.shape) >= 0.25)
             if args.bank == "no-lab" and bank >= 3:
                 keep = native.copy()
-            transformed.append(rebuild(raw, keep, means, scales))
+            transformed.append(keep)
         for h in range(6, hours + 1):
             if h >= end:
                 continue
@@ -154,7 +156,9 @@ def prepare(args, cfg):
             length = h - start
             x = np.zeros((7, 24, 59), np.float32)
             for k in range(7):
-                x[k, -length:] = transformed[k][start:h]
+                x[k, -length:] = rebuild(
+                    raw[start:h], transformed[k][start:h], means, scales
+                )
             padding = np.r_[np.zeros(24 - length), np.ones(length)]
             records.append(
                 (x, padding, y, ep.patient, ep.episode, h, end, int(ep.fatal), ep.split)

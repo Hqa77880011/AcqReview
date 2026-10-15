@@ -22,3 +22,5 @@ Outputs are `model.pt`, validation history, `metrics.json`, per-landmark timelin
 ## Patient/cell analysis
 
 Run `python -m acqreview.analysis --draws 1000` after evaluation to compute grouped bootstrap intervals and the supported subgroup or repeatability summaries. The input/output paths can be set with `--input` and `--output`.
+
+JSON output uses `null` for unbounded intervals, unavailable thresholds or undefined statistics. A null capacity calibration threshold represents a domain-wide compatibility set.
